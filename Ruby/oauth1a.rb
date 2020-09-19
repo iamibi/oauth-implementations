@@ -15,9 +15,65 @@ class OAuth1
     HTTP_METHOD_GET  = 'GET'
     HTTP_METHOD_POST = 'POST'
 
-    def initialize(consumer_key, consumer_secret)
-        @consumer_key = consumer_key
-        @consumer_secret = consumer_secret
+    # Initialize the service with default values.
+    # * consumer_key: API Key provided by the external partner. You can get that from the partner's dashboard.
+    # * consumer_secret: API Secret provided by the external partner. You can get that from the partner's dashboard.
+    # * request_url: This is the URL for initiating a request. Request URL should be of the form https://example.com/oauth/request_token
+    #     where `https://example.com` is the base_url of the API you are trying to access and
+    #     `oauth/request_token` is the end-point provided by the external partner for getting the request token.
+    # * authorize_url: The API URL which is required to authorize the request. It should be of the form
+    #     `https://example.com/oauth/authorize` where `oauth/authorize` is the end-point
+    #     provided by the external partner for authorizing the request.
+    # * access_token_url: The API URL which is required for exchanging the request token with a usable access token.
+    #     Access Token URL should be of the form `https://example.com/oauth/access_token` where
+    #     `oauth/access_token` is the end-point provided by the external partner for exchanging the request token with access token.
+    def initialize(consumer_key, consumer_secret, request_url, authorize_url, access_token_url)
+      @consumer_key = consumer_key
+      @consumer_secret = consumer_secret
+      @request_url = request_url
+      @authorize_url = authorize_url
+      @access_token_url = access_token_url
+    end
+
+    # 1. Make a request for a request token.
+    #    Expected to be a [POST] HTTP Request.
+    #
+    # * callback_url: The URL which will be called once the user has authenticated
+    #     with the external service along with a `oauth_token` and `oauth_token_secret`.
+    #
+    # This request will return you an `oauth_token` (Request Token) and `oauth_token_secret` which you need to
+    # save for performing request in Step 2 and 3.
+    def request_token(callback_url)
+      additional_params = { 'oauth_callback' => callback_url }
+      oauth1a(@request_url, HTTP_METHOD_POST, '', '', true, additional_params)
+    end
+
+    # 2. Get the authorize URL and redirect the user to it.
+    #    Expected to be a [GET] HTTP Request.
+    #
+    # * oauth_token: This is the token which you would have received in the step (1). Pass it here
+    #     so that it can be appended to the authorize_url.
+    #
+    # This request if successfully authorized by user on external partner side will
+    # return an `oauth_verifier` and `oauth_token` (Request Token) as response. Verify that the
+    # received `oauth_token` is same as that present in Step 1 of authentication process.
+    def authorize_request(oauth_token)
+      "#{@authorize_url}?#{oauth_token}"
+    end
+
+    # 3. Get the usable access token in exchange for request token.
+    #    Expected to be a [POST] HTTP Request.
+    #
+    # * oauth_token: The `oauth_token` received in the Step 1 of authentication flow.
+    # * oauth_token_secret: The `oauth_token_secret` received in the Step 1 of authentication flow.
+    # * oauth_verifier: This is a string you would have received in Step 2 of authentication flow.
+    #
+    # This request will get you an `oauth_token` (Access Token) which can be used on the user's behalf for making
+    # request to the external partner's API's. Store the received `oauth_token` and `oauth_token_secret` to
+    # a secure DB so that it can be accessed later for making API requests on user's behalf.
+    def access_token(oauth_token, oauth_token_secret, oauth_verifier)
+      additional_params = { 'oauth_verifier' => oauth_verifier }
+      oauth1a(@access_token_url, HTTP_METHOD_POST, oauth_token, oauth_token_secret, true, additional_params)
     end
 
     protected
@@ -38,7 +94,6 @@ class OAuth1
                 oauth_token_secret = '',
                 use_header_auth = false,
                 additional_params = {})
-
 
       # Get the oauth params.
       oauth_params = get_oauth_params(oauth_token, additional_params)
