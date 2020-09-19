@@ -17,7 +17,7 @@ class OAuth1
 
     def initialize(consumer_key, consumer_secret)
         @consumer_key = consumer_key
-        @consumer_secret = @consumer_secret
+        @consumer_secret = consumer_secret
     end
 
     protected
@@ -111,11 +111,11 @@ class OAuth1
     private
 
     # OAuth Parameter Constants.
-    CONTENT_TYPE_FORM_URLENCODED = 'application/x-www-form-urlencoded'.freeze
-    OAUTH_SIGNATURE_METHOD       = 'HMAC-SHA1'.freeze
-    OAUTH_1_VERSION              = '1.0'.freeze
-    DIGEST_ALGO_SHA1             = 'sha1'.freeze
-    HTTP_USER_AGENT              = 'HTTP Client'.freeze
+    CONTENT_TYPE_FORM_URLENCODED = 'application/x-www-form-urlencoded'
+    OAUTH_SIGNATURE_METHOD       = 'HMAC-SHA1'
+    OAUTH_1_VERSION              = '1.0'
+    DIGEST_ALGO_SHA1             = 'sha1'
+    HTTP_USER_AGENT              = 'HTTP Client'
 
     # Encode the string to Base64 Strict Encoding.
     def encode64(string)
